@@ -1,25 +1,20 @@
 import React, { useState, useEffect } from "react";
 import "./App.css";
 import { FaEdit, FaTrash } from "react-icons/fa";
-import { useDispatch, useSelector } from "react-redux";
-import Modal from "./components/modal/modal-components";
-import {
-  addNote,
-  updateNote,
-  deleteNote,
-} from "./components/store/reducerOne/createNote";
+
+import Modal from "./modal/modal-component";
 
 const App = () => {
-  const dispatch = useDispatch();
-  const { notes } = useSelector((state) => state.getNotes);
   const [showForm, setShowForm] = useState(false);
-  const [notes1, setNotes1] = useState([]);
+  const [notes, setNotes] = useState([]);
   const [selectedNote, setSelectedNote] = useState(null);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
-  console.log("notes==========", notes);
+
   useEffect(() => {
-    setNotes1(notes);
-  }, [dispatch, notes]);
+    const storedNotes = JSON.parse(localStorage.getItem("notes")) || [];
+    setNotes(storedNotes);
+  }, []);
 
   const saveNotesToLocalStorage = (notes) => {
     localStorage.setItem("notes", JSON.stringify(notes));
@@ -36,7 +31,7 @@ const App = () => {
 
   const addSitckyNote = () => {
     const newColor = getRandomColor();
-    setNotes1([...notes1, newColor]);
+    setNotes([...notes, newColor]);
   };
 
   const handleAddNote = (title, description) => {
@@ -46,25 +41,35 @@ const App = () => {
       description: description,
       color: getRandomColor(),
     };
-    dispatch(addNote(newNote));
+    const updatedNotes = [...notes, newNote];
+    setNotes(updatedNotes);
+    saveNotesToLocalStorage(updatedNotes);
+
     setShowForm(false);
   };
 
-  const handleEditNote = (note, index) => {
-    setSelectedNote(note, index);
+  const handleEditNote = (note) => {
+    setSelectedNote(note);
     setShowForm(true);
   };
 
-  const handleUpdateNote = (note, index) => {
-    dispatch(updateNote(note, index));
+  console.log(notes);
+
+  const handleUpdateNote = (title, description) => {
+    const updatedNotes = notes.map((note) =>
+      note.id === selectedNote.id
+        ? { ...note, text: title, description: description }
+        : note
+    );
+    setNotes(updatedNotes);
+    saveNotesToLocalStorage(updatedNotes);
     setSelectedNote(null);
     setShowForm(false);
   };
 
   const handleDeleteNote = (id) => {
-    dispatch(deleteNote(id));
     const updatedNotes = notes.filter((note) => note.id !== id);
-    setNotes1(updatedNotes);
+    setNotes(updatedNotes);
     saveNotesToLocalStorage(updatedNotes);
     setSelectedNote(null);
     // setNoteText("");
@@ -76,6 +81,7 @@ const App = () => {
     addSitckyNote(true);
   };
 
+  console.log("selectedNote", selectedNote);
   return (
     <div className="App">
       <h1>Sticky Notes App</h1>
@@ -99,7 +105,7 @@ const App = () => {
         </button>
       )}
       <div className="note-list">
-        {notes?.map((note, index) => (
+        {notes?.map((note) => (
           <div
             key={note.id}
             className="note"
@@ -108,12 +114,12 @@ const App = () => {
             <span>{note.text}</span>
             <span>{note.description}</span>
             <div className="note-actions">
-              <button onClick={() => handleEditNote(note, index)}>
-                <FaEdit />
+              <button onClick={() => handleEditNote(note)}>
+                <FaEdit onClick={() => handleEditNote(note)} />
               </button>
 
               <button onClick={() => handleDeleteNote(note.id)}>
-                <FaTrash />
+                <FaTrash onClick={() => handleDeleteNote(note.id)} />
               </button>
             </div>
           </div>
